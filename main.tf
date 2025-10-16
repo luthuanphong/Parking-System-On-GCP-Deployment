@@ -6,182 +6,121 @@ provider "google" {
   region  = var.region
 }
 
-# Enable required APIs
-resource "google_project_service" "cloud_run_api" {
-  service = "run.googleapis.com"
-
-  disable_dependent_services = false
-  disable_on_destroy         = false
+data "google_secret_manager_secret_version" "db_user" {
+  secret  = "db_user"
+  version = "latest"
 }
 
-resource "google_project_service" "container_registry_api" {
-  service = "containerregistry.googleapis.com"
-
-  disable_dependent_services = false
-  disable_on_destroy         = false
+data "google_secret_manager_secret_version" "db_pass" {
+  secret  = "db_password"
+  version = "latest"
 }
 
-resource "google_project_service" "iam_api" {
-  service = "iam.googleapis.com"
-
-  disable_dependent_services = false
-  disable_on_destroy         = false
+data "google_secret_manager_secret_version" "db_name" {
+  secret  = "db_name"
+  version = "latest"
 }
 
-# Reference to existing service account
-data "google_service_account" "existing_sa" {
-  account_id = var.service_account_email
+data "google_secret_manager_secret_version" "db_connection_name" {
+  secret  = "db_connection_name"
+  version = "latest"
 }
 
-# Enable VPC Connector API
-resource "google_project_service" "vpcaccess_api" {
-  service = "vpcaccess.googleapis.com"
-
-  disable_dependent_services = false
-  disable_on_destroy         = false
+data "google_secret_manager_secret_version" "gcp_project_id" {
+  secret  = "gcp_project_id"
+  version = "latest"
 }
 
-# VPC Connector for connecting to existing VPC
-resource "google_vpc_access_connector" "parking_system_connector" {
-  count         = var.create_vpc_connector ? 1 : 0
-  name          = var.vpc_connector_name
-  region        = var.region
-  ip_cidr_range = var.vpc_connector_cidr
-  network       = var.vpc_network_name
+data "google_secret_manager_secret_version" "kms_location_id" {
+  secret  = "kms_location_id"
+  version = "latest"
+}
 
-  depends_on = [
-    google_project_service.vpcaccess_api
+data "google_secret_manager_secret_version" "kms_key_ring_id" {
+  secret  = "kms_key_ring_id"
+  version = "latest"
+}
+
+data "google_secret_manager_secret_version" "kms_key_id" {
+  secret  = "kms_key_id"
+  version = "latest"
+}
+
+data "google_secret_manager_secret_version" "redis_host" {
+  secret  = "redis_host"
+  version = "latest"
+}
+
+locals {
+  DB_USER             = try(jsondecode(data.google_secret_manager_secret_version.db_user), data.google_secret_manager_secret_version.db_user).secret_data
+  DB_PASS             = try(jsondecode(data.google_secret_manager_secret_version.db_pass), data.google_secret_manager_secret_version.db_pass).secret_data
+  DB_NAME             = try(jsondecode(data.google_secret_manager_secret_version.db_name), data.google_secret_manager_secret_version.db_name).secret_data
+  DB_CONNECTION_NAME  = try(jsondecode(data.google_secret_manager_secret_version.db_connection_name), data.google_secret_manager_secret_version.db_connection_name).secret_data
+  GCP_PROJECT_ID      = try(jsondecode(data.google_secret_manager_secret_version.gcp_project_id), data.google_secret_manager_secret_version.gcp_project_id).secret_data
+  KMS_LOCATION_ID     = try(jsondecode(data.google_secret_manager_secret_version.kms_location_id), data.google_secret_manager_secret_version.kms_location_id).secret_data
+  KMS_KEY_RING_ID     = try(jsondecode(data.google_secret_manager_secret_version.kms_key_ring_id), data.google_secret_manager_secret_version.kms_key_ring_id).secret_data
+  KMS_KEY_ID          = try(jsondecode(data.google_secret_manager_secret_version.kms_key_id), data.google_secret_manager_secret_version.kms_key_id).secret_data
+  REDIS_HOST          = try(jsondecode(data.google_secret_manager_secret_version.redis_host), data.google_secret_manager_secret_version.redis_host).secret_data
+}
+
+module "cloud_run" {
+  source  = "GoogleCloudPlatform/cloud-run/google"
+  version = "~> 0.21"
+
+  # Required variables
+  service_name          = "parking-service-api"
+  project_id            = var.project_id
+  location              = var.region
+  image                 = "${var.image}:${var.tag}"
+  service_account_email = var.service_account_email
+  container_concurrency = 100
+  limits                = var.limit
+  env_vars = [
+    {
+      name  = "DB_USER"
+      value = local.DB_USER
+    }
+    ,
+    {
+      name  = "DB_PASS"
+      value = local.DB_PASS
+    }
+    ,
+    {
+      name  = "DB_NAME"
+      value = local.DB_NAME
+    }
+    ,
+    {
+      name  = "DB_CONNECTION_NAME"
+      value = local.DB_CONNECTION_NAME
+    }
+    ,
+    {
+      name  = "GCP_PROJECT_ID"
+      value = local.GCP_PROJECT_ID
+    }
+    ,
+    {
+      name  = "KMS_LOCATION_ID"
+      value = local.KMS_LOCATION_ID
+    }
+    ,
+    {
+      name  = "KMS_KEY_RING_ID"
+      value = local.KMS_KEY_RING_ID
+    }
+    ,
+    {
+      name  = "KMS_KEY_ID"
+      value = local.KMS_KEY_ID
+    }
+    ,
+    {
+      name  = "REDIS_HOST"
+      value = local.REDIS_HOST
+    }
+
   ]
-}
-
-# Cloud Run Service
-resource "google_cloud_run_v2_service" "parking_system" {
-  name     = var.service_name
-  location = var.region
-
-  depends_on = [
-    google_project_service.cloud_run_api
-  ]
-
-  template {
-    service_account = data.google_service_account.existing_sa.email
-
-    scaling {
-      min_instance_count = var.min_instances
-      max_instance_count = var.max_instances
-    }
-
-    containers {
-      image = "${var.container_image}:${var.image_tag}"
-
-      ports {
-        container_port = var.container_port
-      }
-
-      resources {
-        limits = {
-          cpu    = var.cpu_limit
-          memory = var.memory_limit
-        }
-        cpu_idle = var.cpu_idle
-      }
-
-      # Environment variables
-      dynamic "env" {
-        for_each = var.environment_variables
-        content {
-          name  = env.key
-          value = env.value
-        }
-      }
-
-      # Startup probe
-      startup_probe {
-        http_get {
-          path = var.health_check_path
-          port = var.container_port
-        }
-        initial_delay_seconds = 10
-        timeout_seconds       = 5
-        period_seconds        = 10
-        failure_threshold     = 3
-      }
-
-      # Liveness probe
-      liveness_probe {
-        http_get {
-          path = var.health_check_path
-          port = var.container_port
-        }
-        initial_delay_seconds = 30
-        timeout_seconds       = 5
-        period_seconds        = 30
-        failure_threshold     = 3
-      }
-    }
-
-    # VPC connector (for connecting to existing VPC)
-    /*
-    dynamic "vpc_access" {
-      for_each = var.create_vpc_connector || var.existing_vpc_connector_name != "" ? [1] : []
-      content {
-        connector = var.create_vpc_connector ? google_vpc_access_connector.parking_system_connector[0].id : var.existing_vpc_connector_name
-        egress    = var.vpc_egress_setting
-      }
-    }
-    */
-
-    vpc_access {
-      connector = "projects/${var.project_id}/locations/${var.region}/connectors/${var.existing_vpc_connector_name}."
-      egress    = var.vpc_egress_setting
-    }
-
-    # Timeout
-    timeout = "${var.request_timeout}s"
-
-    # Labels
-    labels = merge(var.labels, {
-      managed-by = "terraform"
-      service    = "parking-system",
-      version    = var.image_tag
-    })
-  }
-
-  traffic {
-    percent = 100
-    type    = "TRAFFIC_TARGET_ALLOCATION_TYPE_LATEST"
-  }
-}
-
-# IAM policy for Cloud Run service (allow public access or specific users)
-resource "google_cloud_run_service_iam_policy" "parking_system_policy" {
-  location = google_cloud_run_v2_service.parking_system.location
-  project  = google_cloud_run_v2_service.parking_system.project
-  service  = google_cloud_run_v2_service.parking_system.name
-
-  policy_data = data.google_iam_policy.parking_system_invoker.policy_data
-}
-
-data "google_iam_policy" "parking_system_invoker" {
-  binding {
-    role = "roles/run.invoker"
-    members = var.allow_public_access ? [
-      "allUsers"
-    ] : var.allowed_members
-  }
-}
-
-# Cloud Run domain mapping (optional)
-resource "google_cloud_run_domain_mapping" "parking_system_domain" {
-  count    = var.custom_domain != "" ? 1 : 0
-  location = var.region
-  name     = var.custom_domain
-
-  metadata {
-    namespace = var.project_id
-  }
-
-  spec {
-    route_name = google_cloud_run_v2_service.parking_system.name
-  }
+  members = ["allUsers"]
 }
