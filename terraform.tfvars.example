@@ -1,0 +1,55 @@
+# terraform.tfvars.example - Example configuration file
+# Copy this file to terraform.tfvars and update with your values
+
+# Required variables
+project_id            = "your-gcp-project-id"
+service_account_email = "your-existing-service-account@your-project-id.iam.gserviceaccount.com"
+container_image       = "gcr.io/your-project-id/parking-system:latest"
+
+# Optional variables (uncomment and modify as needed)
+# region           = "us-central1"
+# service_name     = "parking-system-api"
+# container_port   = 8080
+# cpu_limit        = "1000m"
+# memory_limit     = "512Mi"
+# min_instances    = 0
+# max_instances    = 10
+# request_timeout  = 300
+
+# Environment variables for your application
+environment_variables = {
+  NODE_ENV    = "production"
+  PORT        = "8080"
+  # DATABASE_URL = "your-database-connection-string"
+  # API_KEY      = "your-api-key"
+}
+
+# Access control
+allow_public_access = true
+# allowed_members = [
+#   "user:admin@yourdomain.com",
+#   "serviceAccount:ci-cd@your-project.iam.gserviceaccount.com"
+# ]
+
+# Optional: VPC configuration for connecting to existing VPC
+# Option 1: Create a new VPC connector for your existing VPC
+create_vpc_connector = true
+vpc_network_name     = "your-existing-vpc-network"
+vpc_connector_name   = "parking-system-connector"
+vpc_connector_cidr   = "10.8.0.0/28"  # Make sure this doesn't overlap with existing subnets
+vpc_egress_setting   = "PRIVATE_RANGES_ONLY"
+
+# Option 2: Use an existing VPC connector (comment out Option 1 if using this)
+# create_vpc_connector = false
+# existing_vpc_connector_name = "projects/your-project-id/locations/us-central1/connectors/your-existing-connector"
+# vpc_egress_setting = "PRIVATE_RANGES_ONLY"
+
+# Optional: Custom domain
+# custom_domain = "api.yourdomain.com"
+
+# Labels
+labels = {
+  environment = "production"
+  application = "parking-system"
+  team        = "backend"
+}
