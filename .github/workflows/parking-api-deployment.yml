@@ -22,9 +22,12 @@ jobs:
           terraform_version: 1.7.5
       - name: Terraform Init
         run: terraform init
+      - name: Update Variables
+        run: |
+          echo 'tag = "${{ github.event.client_payload.run_id }}"' >> terraform.tfvars
       - name: Terraform Validate
         run: terraform validate
       - name: Terraform plan
-        run: terraform plan -out=tfplan -var="tag=${{ github.event.client_payload.run_id }}"
+        run: terraform plan -out=tfplan
       - name: Apply Terraform
         run: terraform apply -auto-approve tfplan
