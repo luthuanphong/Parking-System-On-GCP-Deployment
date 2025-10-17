@@ -52,15 +52,15 @@ data "google_secret_manager_secret_version" "redis_host" {
 }
 
 locals {
-  DB_USER             = try(jsondecode(data.google_secret_manager_secret_version.db_user), data.google_secret_manager_secret_version.db_user).secret_data
-  DB_PASS             = try(jsondecode(data.google_secret_manager_secret_version.db_pass), data.google_secret_manager_secret_version.db_pass).secret_data
-  DB_NAME             = try(jsondecode(data.google_secret_manager_secret_version.db_name), data.google_secret_manager_secret_version.db_name).secret_data
-  DB_CONNECTION_NAME  = try(jsondecode(data.google_secret_manager_secret_version.db_connection_name), data.google_secret_manager_secret_version.db_connection_name).secret_data
-  GCP_PROJECT_ID      = try(jsondecode(data.google_secret_manager_secret_version.gcp_project_id), data.google_secret_manager_secret_version.gcp_project_id).secret_data
-  KMS_LOCATION_ID     = try(jsondecode(data.google_secret_manager_secret_version.kms_location_id), data.google_secret_manager_secret_version.kms_location_id).secret_data
-  KMS_KEY_RING_ID     = try(jsondecode(data.google_secret_manager_secret_version.kms_key_ring_id), data.google_secret_manager_secret_version.kms_key_ring_id).secret_data
-  KMS_KEY_ID          = try(jsondecode(data.google_secret_manager_secret_version.kms_key_id), data.google_secret_manager_secret_version.kms_key_id).secret_data
-  REDIS_HOST          = try(jsondecode(data.google_secret_manager_secret_version.redis_host), data.google_secret_manager_secret_version.redis_host).secret_data
+  DB_USER            = try(jsondecode(data.google_secret_manager_secret_version.db_user), data.google_secret_manager_secret_version.db_user).secret_data
+  DB_PASS            = try(jsondecode(data.google_secret_manager_secret_version.db_pass), data.google_secret_manager_secret_version.db_pass).secret_data
+  DB_NAME            = try(jsondecode(data.google_secret_manager_secret_version.db_name), data.google_secret_manager_secret_version.db_name).secret_data
+  DB_CONNECTION_NAME = try(jsondecode(data.google_secret_manager_secret_version.db_connection_name), data.google_secret_manager_secret_version.db_connection_name).secret_data
+  GCP_PROJECT_ID     = try(jsondecode(data.google_secret_manager_secret_version.gcp_project_id), data.google_secret_manager_secret_version.gcp_project_id).secret_data
+  KMS_LOCATION_ID    = try(jsondecode(data.google_secret_manager_secret_version.kms_location_id), data.google_secret_manager_secret_version.kms_location_id).secret_data
+  KMS_KEY_RING_ID    = try(jsondecode(data.google_secret_manager_secret_version.kms_key_ring_id), data.google_secret_manager_secret_version.kms_key_ring_id).secret_data
+  KMS_KEY_ID         = try(jsondecode(data.google_secret_manager_secret_version.kms_key_id), data.google_secret_manager_secret_version.kms_key_id).secret_data
+  REDIS_HOST         = try(jsondecode(data.google_secret_manager_secret_version.redis_host), data.google_secret_manager_secret_version.redis_host).secret_data
 }
 
 module "cloud_run" {

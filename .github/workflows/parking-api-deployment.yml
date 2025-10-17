@@ -35,9 +35,8 @@ jobs:
       - name: Update Variables from inputs
         if: ${{ github.event_name == 'workflow_dispatch' }}
         run: |
+          echo -e "\n" >> terraform.tfvars
           echo 'tag = "${{ github.event.inputs.run_id }}"' >> terraform.tfvars
-      - name: Check Terraform variables
-        run: cat terraform.tfvars
       - name: Terraform Validate
         run: terraform validate
       - name: Terraform plan
