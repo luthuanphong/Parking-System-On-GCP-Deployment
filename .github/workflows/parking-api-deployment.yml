@@ -6,24 +6,16 @@ on:
   repository_dispatch:
     types: [artifact_uploaded]
 jobs:
-  checkout:
+  deploy:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-  gcloud-setup:
-    runs-on: ubuntu-latest
-    needs: [checkout]
-    steps:
-    - name: auth service account 2
-      uses: 'google-github-actions/auth@v2'
-      with:
-        credentials_json: '${{ secrets.GCP_CREDENTIALS }}'
-    - name: install gcloud
-      uses: 'google-github-actions/setup-gcloud@v3'
-  terraform-setup:
-    runs-on: ubuntu-latest
-    needs: [gcloud-setup]
-    steps:
+      - name: auth service account 2
+        uses: 'google-github-actions/auth@v2'
+        with:
+          credentials_json: '${{ secrets.GCP_CREDENTIALS }}'
+      - name: install gcloud
+        uses: 'google-github-actions/setup-gcloud@v3'
       - name: Setup Terraform
         uses: hashicorp/setup-terraform@v2
         with:
@@ -34,9 +26,5 @@ jobs:
         run: terraform validate
       - name: Terraform plan
         run: terraform plan -out=tfplan -var="tag=${{ github.event.client_payload.run_id }}"
-  terraform-apply:
-    runs-on: ubuntu-latest
-    needs: [terraform-setup]
-    steps:
       - name: Apply Terraform
         run: terraform apply -auto-approve tfplan
