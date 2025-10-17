@@ -5,6 +5,12 @@ name: Cloud Run deployment
 on:
   repository_dispatch:
     types: [artifact_uploaded]
+  workflow_dispatch:
+    inputs:
+      run_id:
+        description: 'Run ID'
+        required: true
+        default: 'latest'
 jobs:
   deploy:
     runs-on: ubuntu-latest
@@ -22,12 +28,19 @@ jobs:
           terraform_version: 1.7.5
       - name: Terraform Init
         run: terraform init
-      - name: Update Variables
+      - name: Update Variables from event
+        if: ${{ github.event_name == 'repository_dispatch' }}
         run: |
           echo 'tag = "${{ github.event.client_payload.run_id }}"' >> terraform.tfvars
+      - name: Update Variables from inputs
+        if: ${{ github.event_name == 'workflow_dispatch' }}
+        run: |
+          echo 'tag = "${{ github.event.inputs.run_id }}"' >> terraform.tfvars
+      - name: Check Terraform variables
+        run: cat terraform.tfvars
       - name: Terraform Validate
         run: terraform validate
       - name: Terraform plan
-        run: terraform plan -out=tfplan
+        run: terraform plan -out=plan.out
       - name: Apply Terraform
-        run: terraform apply -auto-approve tfplan
+        run: terraform apply -auto-approve
