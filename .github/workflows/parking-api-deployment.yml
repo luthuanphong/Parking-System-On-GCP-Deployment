@@ -28,6 +28,8 @@ jobs:
           terraform_version: 1.7.5
       - name: Terraform Init
         run: terraform init
+      - name: kill-instance
+        run: terraform destroy -auto-approve
       - name: Update Variables from event
         if: ${{ github.event_name == 'repository_dispatch' }}
         run: |
