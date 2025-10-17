@@ -120,7 +120,6 @@ module "cloud_run" {
       name  = "REDIS_HOST"
       value = local.REDIS_HOST
     }
-
   ]
   members = ["allUsers"]
 }

@@ -6,13 +6,37 @@ on:
   repository_dispatch:
     types: [artifact_uploaded]
 jobs:
-  build:
+  checkout:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Run a one-line script
-        run: echo Hello, world!
-      - name: Run a multi-line script
-        run: |
-          echo Add other actions to build,
-          echo test, and deploy your project.
+  gcloud-setup:
+    runs-on: ubuntu-latest
+    needs: [checkout]
+    steps:
+    - name: auth service account 2
+      uses: 'google-github-actions/auth@v2'
+      with:
+        credentials_json: '${{ secrets.GCP_CREDENTIALS }}'
+    - name: install gcloud
+      uses: 'google-github-actions/setup-gcloud@v3'
+  terraform-setup:
+    runs-on: ubuntu-latest
+    needs: [gcloud-setup]
+    steps:
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v2
+        with:
+          terraform_version: 1.7.5
+      - name: Terraform Init
+        run: terraform init
+      - name: Terraform Validate
+        run: terraform validate
+      - name: Terraform plan
+        run: terraform plan -out=tfplan -var="tag=${{ github.event.client_payload.run_id }}"
+  terraform-apply:
+    runs-on: ubuntu-latest
+    needs: [terraform-setup]
+    steps:
+      - name: Apply Terraform
+        run: terraform apply -auto-approve tfplan
