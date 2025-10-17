@@ -31,6 +31,7 @@ jobs:
       - name: Update Variables from event
         if: ${{ github.event_name == 'repository_dispatch' }}
         run: |
+          echo -e "\n" >> terraform.tfvars
           echo 'tag = "${{ github.event.client_payload.run_id }}"' >> terraform.tfvars
       - name: Update Variables from inputs
         if: ${{ github.event_name == 'workflow_dispatch' }}
