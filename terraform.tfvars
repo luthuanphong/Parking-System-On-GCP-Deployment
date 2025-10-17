@@ -6,3 +6,4 @@ limit = {
   cpu    = "1000m"
   memory = "512Mi"
 }
+tag = "18588916857"

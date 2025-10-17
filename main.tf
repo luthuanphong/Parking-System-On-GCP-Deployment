@@ -75,6 +75,7 @@ module "cloud_run" {
   service_account_email = var.service_account_email
   container_concurrency = 100
   limits                = var.limit
+  force_override        = true
   env_vars = [
     {
       name  = "DB_USER"
