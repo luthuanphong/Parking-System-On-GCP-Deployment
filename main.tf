@@ -77,13 +77,14 @@ module "cloud_run" {
   limits                = var.limit
   force_override        = true
   service_annotations = {
-    run.googleapis.com / vpc-access-egress = "private-ranges-only"
-    run.googleapis.com / network-interfaces = [
+    "run.googleapis.com/vpc-access-egress" = "private-ranges-only"
+    "run.googleapis.com/network-interfaces" = jsonencode(
+    [
       {
         network    = "parking-system-private-network",
         subnetwork = "parking-system-private-network"
       }
-    ]
+    ])
   }
   env_vars = [
     {
