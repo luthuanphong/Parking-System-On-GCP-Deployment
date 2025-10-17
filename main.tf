@@ -76,7 +76,7 @@ module "cloud_run" {
   container_concurrency = 100
   limits                = var.limit
   force_override        = true
-  service_annotations = {
+  template_annotations = {
     "run.googleapis.com/vpc-access-egress" = "private-ranges-only"
     "run.googleapis.com/network-interfaces" = jsonencode(
     [
