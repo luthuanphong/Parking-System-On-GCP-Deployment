@@ -76,6 +76,15 @@ module "cloud_run" {
   container_concurrency = 100
   limits                = var.limit
   force_override        = true
+  service_annotations = {
+    run.googleapis.com / vpc-access-egress = "private-ranges-only"
+    run.googleapis.com / network-interfaces = [
+      {
+        network    = "parking-system-private-network",
+        subnetwork = "parking-system-private-network"
+      }
+    ]
+  }
   env_vars = [
     {
       name  = "DB_USER"
