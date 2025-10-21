@@ -1,136 +1,178 @@
-# main.tf - Main Terraform configuration for Cloud Run deployment
-
-# Configure the Google Cloud Provider
 provider "google" {
   project = var.project_id
   region  = var.region
 }
 
-data "google_secret_manager_secret_version" "db_user" {
-  secret  = "db_user"
-  version = "latest"
+data "google_secret_manager_secret" "db_user" {
+  secret_id = "db_user"
+  project   = var.project_id
 }
 
-data "google_secret_manager_secret_version" "db_pass" {
-  secret  = "db_password"
-  version = "latest"
+data "google_secret_manager_secret" "db_pass" {
+  secret_id = "db_password"
+  project   = var.project_id
 }
 
-data "google_secret_manager_secret_version" "db_name" {
-  secret  = "db_name"
-  version = "latest"
+data "google_secret_manager_secret" "db_name" {
+  secret_id = "db_name"
+  project   = var.project_id
 }
 
-data "google_secret_manager_secret_version" "db_connection_name" {
-  secret  = "db_connection_name"
-  version = "latest"
+data "google_secret_manager_secret" "db_connection_name" {
+  secret_id = "db_connection_name"
+  project   = var.project_id
 }
 
-data "google_secret_manager_secret_version" "gcp_project_id" {
-  secret  = "gcp_project_id"
-  version = "latest"
+data "google_secret_manager_secret" "gcp_project_id" {
+  secret_id = "gcp_project_id"
+  project   = var.project_id
 }
 
-data "google_secret_manager_secret_version" "kms_location_id" {
-  secret  = "kms_location_id"
-  version = "latest"
+data "google_secret_manager_secret" "kms_location_id" {
+  secret_id = "kms_location_id"
+  project   = var.project_id
 }
 
-data "google_secret_manager_secret_version" "kms_key_ring_id" {
-  secret  = "kms_key_ring_id"
-  version = "latest"
+data "google_secret_manager_secret" "kms_key_ring_id" {
+  secret_id = "kms_key_ring_id"
+  project   = var.project_id
 }
 
-data "google_secret_manager_secret_version" "kms_key_id" {
-  secret  = "kms_key_id"
-  version = "latest"
+data "google_secret_manager_secret" "kms_key_id" {
+  secret_id = "kms_key_id"
+  project   = var.project_id
 }
 
-data "google_secret_manager_secret_version" "redis_host" {
-  secret  = "redis_host"
-  version = "latest"
+data "google_secret_manager_secret" "redis_host" {
+  secret_id = "redis_host"
+  project   = var.project_id
 }
 
-locals {
-  DB_USER            = try(jsondecode(data.google_secret_manager_secret_version.db_user), data.google_secret_manager_secret_version.db_user).secret_data
-  DB_PASS            = try(jsondecode(data.google_secret_manager_secret_version.db_pass), data.google_secret_manager_secret_version.db_pass).secret_data
-  DB_NAME            = try(jsondecode(data.google_secret_manager_secret_version.db_name), data.google_secret_manager_secret_version.db_name).secret_data
-  DB_CONNECTION_NAME = try(jsondecode(data.google_secret_manager_secret_version.db_connection_name), data.google_secret_manager_secret_version.db_connection_name).secret_data
-  GCP_PROJECT_ID     = try(jsondecode(data.google_secret_manager_secret_version.gcp_project_id), data.google_secret_manager_secret_version.gcp_project_id).secret_data
-  KMS_LOCATION_ID    = try(jsondecode(data.google_secret_manager_secret_version.kms_location_id), data.google_secret_manager_secret_version.kms_location_id).secret_data
-  KMS_KEY_RING_ID    = try(jsondecode(data.google_secret_manager_secret_version.kms_key_ring_id), data.google_secret_manager_secret_version.kms_key_ring_id).secret_data
-  KMS_KEY_ID         = try(jsondecode(data.google_secret_manager_secret_version.kms_key_id), data.google_secret_manager_secret_version.kms_key_id).secret_data
-  REDIS_HOST         = try(jsondecode(data.google_secret_manager_secret_version.redis_host), data.google_secret_manager_secret_version.redis_host).secret_data
-}
+resource "google_cloud_run_v2_service" "main" {
+  name     = "parking-service-api"
+  location = var.region
+  ingress  = "INGRESS_TRAFFIC_ALL"
+  
+  template {
+    service_account = var.service_account_email
+    containers {
+      image = "${var.image}:${var.tag}"
+      resources {
+        limits = {
+          cpu    = "2"
+          memory = "1024Mi"
+        }
+      }
 
-module "cloud_run" {
-  source  = "GoogleCloudPlatform/cloud-run/google"
-  version = "~> 0.21"
+      env {
+        name = "DB_USER"
+        value_source {
+          secret_key_ref {
+            secret  = data.google_secret_manager_secret.db_user.secret_id
+            version = "latest"
+          }
+        }
+      }
 
-  # Required variables
-  service_name          = "parking-service-api"
-  project_id            = var.project_id
-  location              = var.region
-  image                 = "${var.image}:${var.tag}"
-  service_account_email = var.service_account_email
-  container_concurrency = 100
-  limits                = var.limit
-  force_override        = true
-  template_annotations = {
-    "run.googleapis.com/vpc-access-egress" = "private-ranges-only"
-    "run.googleapis.com/network-interfaces" = jsonencode(
-    [
-      {
-        network    = "parking-system-private-network",
+      env {
+        name = "DB_PASS"
+        value_source {
+          secret_key_ref {
+            secret  = data.google_secret_manager_secret.db_pass.secret_id
+            version = "latest"
+          }
+        }
+      }
+
+      env {
+        name = "DB_NAME"
+        value_source {
+          secret_key_ref {
+            secret  = data.google_secret_manager_secret.db_name.secret_id
+            version = "latest"
+          }
+        }
+      }
+
+      env {
+        name = "DB_CONNECTION_NAME"
+        value_source {
+          secret_key_ref {
+            secret  = data.google_secret_manager_secret.db_connection_name.secret_id
+            version = "latest"
+          }
+        }
+      }
+
+      env {
+        name = "GCP_PROJECT_ID"
+        value_source {
+          secret_key_ref {
+            secret  = data.google_secret_manager_secret.gcp_project_id.secret_id
+            version = "latest"
+          }
+        }
+      }
+
+      env {
+        name = "KMS_LOCATION_ID"
+        value_source {
+          secret_key_ref {
+            secret  = data.google_secret_manager_secret.kms_location_id.secret_id
+            version = "latest"
+          }
+        }
+      }
+
+      env {
+        name = "KMS_KEY_RING_ID"
+        value_source {
+          secret_key_ref {
+            secret  = data.google_secret_manager_secret.kms_key_ring_id.secret_id
+            version = "latest"
+          }
+        }
+      }
+
+      env {
+        name = "KMS_KEY_ID"
+        value_source {
+          secret_key_ref {
+            secret  = data.google_secret_manager_secret.kms_key_id.secret_id
+            version = "latest"
+          }
+        }
+      }
+
+      env {
+        name = "REDIS_HOST"
+        value_source {
+          secret_key_ref {
+            secret  = data.google_secret_manager_secret.redis_host.secret_id
+            version = "latest"
+          }
+        }
+      }
+    }
+
+    scaling {
+      min_instance_count = 1
+      max_instance_count = 3
+    }
+
+    vpc_access {
+      network_interfaces {
+        network    = "parking-system-private-network"
         subnetwork = "parking-system-private-network"
       }
-    ])
+    }
   }
-  env_vars = [
-    {
-      name  = "DB_USER"
-      value = local.DB_USER
-    }
-    ,
-    {
-      name  = "DB_PASS"
-      value = local.DB_PASS
-    }
-    ,
-    {
-      name  = "DB_NAME"
-      value = local.DB_NAME
-    }
-    ,
-    {
-      name  = "DB_CONNECTION_NAME"
-      value = local.DB_CONNECTION_NAME
-    }
-    ,
-    {
-      name  = "GCP_PROJECT_ID"
-      value = local.GCP_PROJECT_ID
-    }
-    ,
-    {
-      name  = "KMS_LOCATION_ID"
-      value = local.KMS_LOCATION_ID
-    }
-    ,
-    {
-      name  = "KMS_KEY_RING_ID"
-      value = local.KMS_KEY_RING_ID
-    }
-    ,
-    {
-      name  = "KMS_KEY_ID"
-      value = local.KMS_KEY_ID
-    }
-    ,
-    {
-      name  = "REDIS_HOST"
-      value = local.REDIS_HOST
-    }
-  ]
-  members = ["allUsers"]
+} 
+
+resource "google_cloud_run_v2_service_iam_member" "authorize" {
+  project = var.project_id
+  location   = var.region
+  name = google_cloud_run_v2_service.main.name
+  role = "roles/viewer"
+  member = "allUsers"
 }

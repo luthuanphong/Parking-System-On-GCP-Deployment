@@ -174,3 +174,7 @@ For issues and questions:
 - Check the [Terraform Google Provider documentation](https://registry.terraform.io/providers/hashicorp/google/latest/docs)
 - Review [Cloud Run documentation](https://cloud.google.com/run/docs)
 - Open an issue in this repository
+
+## Reference 
+- Cloud Run tips:
+   - https://cloud.google.com/run/docs/tips/general
