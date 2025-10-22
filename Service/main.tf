@@ -48,11 +48,16 @@ data "google_secret_manager_secret" "redis_host" {
   project   = var.project_id
 }
 
+data "google_secret_manager_secret" "booking_version" {
+  secret_id = "booking_version"
+  project   = var.project_id
+}
+
 resource "google_cloud_run_v2_service" "main" {
-  name     = "parking-service-api"
-  location = var.region
-  ingress  = "INGRESS_TRAFFIC_ALL"
-  deletion_protection=false
+  name                = "parking-service-api"
+  location            = var.region
+  ingress             = "INGRESS_TRAFFIC_ALL"
+  deletion_protection = false
   template {
     service_account = var.service_account_email
     containers {
@@ -153,6 +158,16 @@ resource "google_cloud_run_v2_service" "main" {
           }
         }
       }
+
+      env {
+        name = "BOOKING_VERSION"
+        value_source {
+          secret_key_ref {
+            secret  = data.google_secret_manager_secret.booking_version.secret_id
+            version = "latest"
+          }
+        }
+      }
     }
 
     scaling {
@@ -169,15 +184,15 @@ resource "google_cloud_run_v2_service" "main" {
   }
 
   traffic {
-    type = "TRAFFIC_TARGET_ALLOCATION_TYPE_LATEST"
+    type    = "TRAFFIC_TARGET_ALLOCATION_TYPE_LATEST"
     percent = 100
   }
-} 
+}
 
 resource "google_cloud_run_v2_service_iam_member" "authorize" {
-  project = var.project_id
-  location   = var.region
-  name = google_cloud_run_v2_service.main.name
-  role = "roles/run.invoker"
-  member = "allUsers"
+  project  = var.project_id
+  location = var.region
+  name     = google_cloud_run_v2_service.main.name
+  role     = "roles/run.invoker"
+  member   = "allUsers"
 }
