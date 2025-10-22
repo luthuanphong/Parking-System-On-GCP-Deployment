@@ -60,12 +60,13 @@ resource "google_cloud_run_v2_service" "main" {
   deletion_protection = false
   template {
     service_account = var.service_account_email
+    max_instance_request_concurrency = 1500
     containers {
       image = "${var.image}:${var.tag}"
       resources {
         limits = {
-          cpu    = "2"
-          memory = "1024Mi"
+          cpu    = "3"
+          memory = "4096Mi"
         }
       }
 
