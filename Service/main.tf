@@ -172,8 +172,8 @@ resource "google_cloud_run_v2_service" "main" {
     }
 
     scaling {
-      min_instance_count = 2
-      max_instance_count = 3
+      min_instance_count = 3
+      max_instance_count = 5
     }
 
     vpc_access {
