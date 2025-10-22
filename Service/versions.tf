@@ -10,6 +10,6 @@ terraform {
 
   backend "gcs" {
     bucket = "parking-system-deploy-tfstate"
-    prefix = "terraform/state"
+    prefix = "terraform/state/service"
   }
 }
