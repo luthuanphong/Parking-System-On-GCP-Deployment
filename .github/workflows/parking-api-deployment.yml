@@ -18,6 +18,11 @@ on:
         options:
           - Service
           - Handler
+
+concurrency:
+  group: ${{ github.workflow }}      
+  cancel-in-progress: false         
+
 jobs:
   deploy-service:
     if: ${{ (github.event_name == 'workflow_dispatch' && github.event.inputs.type == 'Service') || (github.event_name == 'repository_dispatch' && github.event.client_payload.type == 'Service') }}
