@@ -11,9 +11,58 @@ on:
         description: 'Run ID'
         required: true
         default: 'latest'
+      type:
+        description: 'Build type'
+        required: true
+        type: choice
+        options:
+          - Service
+          - Handler
 jobs:
-  deploy:
+  deploy-service:
+    if: ${{ (github.event_name == 'workflow_dispatch' && github.event.inputs.type == 'Service') || (github.event_name == 'repository_dispatch' && github.event.client_payload.type == 'Service') }}
     runs-on: ubuntu-latest
+    defaults:
+      run: 
+        working-directory: ./Service
+    steps:
+      - uses: actions/checkout@v4
+      - name: auth service account 2
+        uses: 'google-github-actions/auth@v2'
+        with:
+          credentials_json: '${{ secrets.GCP_CREDENTIALS }}'
+      - name: install gcloud
+        uses: 'google-github-actions/setup-gcloud@v3'
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v2
+        with:
+          terraform_version: 1.7.5
+      - name: Terraform Init
+        run: terraform init
+      - name: kill-instance
+        run: terraform destroy -auto-approve
+      - name: Update Variables from event
+        if: ${{ github.event_name == 'repository_dispatch' }}
+        run: |
+          echo -e "\n" >> terraform.tfvars
+          echo 'tag = "${{ github.event.client_payload.run_id }}"' >> terraform.tfvars
+      - name: Update Variables from inputs
+        if: ${{ github.event_name == 'workflow_dispatch' }}
+        run: |
+          echo -e "\n" >> terraform.tfvars
+          echo 'tag = "${{ github.event.inputs.run_id }}"' >> terraform.tfvars
+      - name: Terraform Validate
+        run: terraform validate
+      - name: Terraform plan
+        run: terraform plan -out=plan.out
+      - name: Apply Terraform
+        run: terraform apply -auto-approve
+  deploy-handler:
+    if: ${{ (github.event_name == 'workflow_dispatch' && github.event.inputs.type == 'Handler') || (github.event_name == 'repository_dispatch' && github.event.client_payload.type == 'Handler') }}
+    runs-on: ubuntu-latest
+    defaults:
+      run: 
+        working-directory: ./Handler
     steps:
       - uses: actions/checkout@v4
       - name: auth service account 2
