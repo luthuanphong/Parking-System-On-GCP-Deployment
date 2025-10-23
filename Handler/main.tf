@@ -124,6 +124,11 @@ resource "google_cloud_run_v2_service" "handler" {
       }
     }
 
+    scaling {
+      min_instance_count = 1
+      max_instance_count = 1
+    }
+
     vpc_access {
       network_interfaces {
         network    = "parking-system-private-network"
