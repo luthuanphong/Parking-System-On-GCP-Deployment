@@ -58,6 +58,7 @@ resource "google_cloud_run_v2_service" "main" {
   location            = var.region
   ingress             = "INGRESS_TRAFFIC_ALL"
   deletion_protection = false
+  invoker_iam_disabled = true
   template {
     service_account = var.service_account_email
     max_instance_request_concurrency = 750
@@ -188,12 +189,4 @@ resource "google_cloud_run_v2_service" "main" {
     type    = "TRAFFIC_TARGET_ALLOCATION_TYPE_LATEST"
     percent = 100
   }
-}
-
-resource "google_cloud_run_v2_service_iam_member" "authorize" {
-  project  = var.project_id
-  location = var.region
-  name     = google_cloud_run_v2_service.main.name
-  role     = "roles/run.invoker"
-  member   = "allUsers"
 }
